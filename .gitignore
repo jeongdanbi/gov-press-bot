@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+.env.local
+*.log
+.DS_Store
+.idea/
+.vscode/
+# state/seen.json 는 커밋함 (영속화 필요)

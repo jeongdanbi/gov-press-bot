@@ -1,0 +1,130 @@
+# ============================================================
+# gov-press-bot - 수집 대상 정의 파일
+# ============================================================
+#
+# 새 기관/URL을 추가하려면 아래 예시 양식대로 sources 리스트에 추가하세요.
+# - type: rss              RSS/Atom 피드 (가장 권장)
+# - type: korea_kr_dept    korea.kr 부처 RSS (dept_XXX)
+# - type: html             HTML 목록 페이지 스크래핑 (파서를 parsers/ 에 구현해야 함)
+#
+# keywords_include/exclude는 비워두면 전체 수집, 값이 있으면 해당 키워드 필터 적용
+# ============================================================
+
+# 공통 HTTP 설정
+http:
+  user_agent: "Mozilla/5.0 (gov-press-bot; +https://github.com/yourname/gov-press-bot)"
+  timeout_sec: 20
+  retry: 2
+
+# 다운로드/본문 추출 설정
+extract:
+  download_pdf: true             # PDF 첨부 다운로드 & 텍스트 추출
+  download_hwp: false            # HWP는 파일만 링크, 본문 추출 X (요청사항)
+  max_file_size_mb: 30
+  max_body_chars: 1500           # Slack 알림에 실릴 요약 본문 최대 글자수
+
+# 수집 대상 목록
+sources:
+  # ---------- 핵심 6개 기관 (korea.kr 통합 RSS 기반) ----------
+
+  - id: fsc
+    name: 금융위원회
+    emoji: "🏦"
+    type: korea_kr_dept
+    dept_code: fsc
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  # ─────────────────────────────────────────────
+  # 금융감독원 / 한국은행 주의사항
+  # ─────────────────────────────────────────────
+  # 이 두 기관은 "정부 부처"가 아니라 공공기관/중앙은행이라
+  # korea.kr 정책브리핑에 보도자료가 거의 올라오지 않는다.
+  # 따라서 두 기관은 아래 "korea_kr_all (통합 RSS 필터)" 방식을
+  # 참고용(enabled: false)으로만 등록하고,
+  # 진짜 필요하면 자체 홈페이지 HTML 스크래핑이 필요하다.
+  # (파서는 src/parsers/__init__.py 에 parse_fss_html / parse_bok_html 를 구현하고
+  #  아래 fss_direct / bok_direct 의 enabled: true로 전환)
+  - id: fss_via_all
+    name: 금융감독원
+    emoji: "🛡️"
+    type: korea_kr_all
+    title_prefix_match: ["금감원", "금융감독원"]
+    enabled: false
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: bok_via_all
+    name: 한국은행
+    emoji: "💴"
+    type: korea_kr_all
+    title_prefix_match: ["한국은행", "한은"]
+    enabled: false
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: ftc
+    name: 공정거래위원회
+    emoji: "⚖️"
+    type: korea_kr_dept
+    dept_code: ftc
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: moef
+    name: 기획재정부
+    emoji: "🏛️"
+    type: korea_kr_dept
+    dept_code: moef
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: nts
+    name: 국세청
+    emoji: "📊"
+    type: korea_kr_dept
+    dept_code: nts
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  # ---------- 기관 홈페이지 직접 RSS (korea.kr에 없을 경우 백업용) ----------
+  # 아래는 비활성 상태 기본값. korea_kr_dept가 동작 안 할 때 enabled: true로 전환
+
+  - id: fsc_direct
+    name: 금융위원회 (홈페이지)
+    emoji: "🏦"
+    type: html
+    list_url: "https://www.fsc.go.kr/no010101"
+    parser: fsc_html
+    enabled: false
+
+  - id: fss_direct
+    name: 금융감독원 (홈페이지)
+    emoji: "🛡️"
+    type: html
+    list_url: "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218"
+    parser: fss_html
+    enabled: false
+
+  - id: bok_direct
+    name: 한국은행 (홈페이지)
+    emoji: "💴"
+    type: html
+    list_url: "https://www.bok.or.kr/portal/bbs/P0000559/list.do?menuNo=200690"
+    parser: bok_html
+    enabled: false
+
+  # ---------- 예시: 사용자 지정 URL (소비자원 등) ----------
+  # 아래는 주석. 필요할 때 주석 해제하고 parser 구현하면 사용 가능.
+  #
+  # - id: kca
+  #   name: 한국소비자원
+  #   emoji: "🛒"
+  #   type: html
+  #   list_url: "https://www.kca.go.kr/home/sub.do?menukey=4002"
+  #   parser: kca_html
+  #   enabled: false
