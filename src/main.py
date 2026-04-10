@@ -43,6 +43,13 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
             return 1
 
     store = SeenStore()
+    # --- DEBUG: seen.json 로드 상태 출력 ---
+    print(f"[DEBUG] seen.json loaded. sources in store: {sorted(store.source_ids)}")
+    for sid_key in sorted(store.source_ids):
+        lst = store._data.get(sid_key, [])
+        print(f"[DEBUG]   {sid_key}: {len(lst)}건, 앞3건={lst[:3]}")
+    # --- END DEBUG ---
+
     webhook = None
     if not dry_run:
         webhook = get_slack_webhook()
@@ -59,6 +66,10 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
             continue
 
         print(f"[{sid}] 수집: {len(items)} 건")
+        # --- DEBUG: 수집한 uid 샘플 ---
+        if items:
+            print(f"[DEBUG] [{sid}] 수집한 첫 5건 uid: {[it.uid for it in items[:5]]}")
+        # --- END DEBUG ---
 
         # 첫 실행 여부 판정: 이 source를 한 번도 본 적 없으면
         # 스팸 방지를 위해 지금 시점 이후에 올라오는 것만 알림으로 보내고,
@@ -72,13 +83,18 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
 
         # 새 항목 추림
         new_items: List[PressItem] = []
+        seen_count = 0
         for it in items:
             if store.is_seen(sid, it.uid):
+                seen_count += 1
                 continue
             if not passes_filter(it, source):
                 store.mark(sid, it.uid)  # 필터 탈락해도 다음에 또 보지 않도록 기록
                 continue
             new_items.append(it)
+        # --- DEBUG: 중복/신규 비율 ---
+        print(f"[DEBUG] [{sid}] 이미 seen: {seen_count}건, 신규 후보: {len(new_items)}건")
+        # --- END DEBUG ---
 
         # 최신순 정렬 (published_at desc). None은 맨 뒤로.
         new_items.sort(key=lambda x: x.published_at or 0, reverse=True)
@@ -100,7 +116,7 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
         if dry_run:
             for it in enriched:
                 print(f"  [DRY] {it.title} ({len(it.body_text)}자 본문, 첨부 {len(it.attachments)})")
-                store.mark(sid, it.uid)
+                # dry-run에서는 seen에 마킹하지 않음 (테스트 반복 가능하게)
         else:
             sent = send_items(enriched, webhook)
             print(f"[{sid}] Slack 전송: {sent}/{len(enriched)}")
@@ -109,7 +125,9 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
 
         total_new += len(enriched)
 
-    store.save()
+    # dry-run에서는 seen.json을 저장하지 않음
+    if not dry_run:
+        store.save()
     print(f"\n=== 완료: 총 {total_new} 건 처리 ===")
     return 0
 
