@@ -91,6 +91,24 @@ sources:
     keywords_include: []
     keywords_exclude: []
 
+  - id: molit
+    name: 국토교통부
+    emoji: "🏗️"
+    type: korea_kr_dept
+    dept_code: molit
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: mss
+    name: 중소벤처기업부
+    emoji: "🚀"
+    type: korea_kr_dept
+    dept_code: mss
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
   # ---------- 기관 홈페이지 직접 RSS (korea.kr에 없을 경우 백업용) ----------
   # 아래는 비활성 상태 기본값. korea_kr_dept가 동작 안 할 때 enabled: true로 전환
 
