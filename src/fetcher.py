@@ -59,14 +59,24 @@ def _parse_pubdate(raw: str) -> datetime | None:
 # ----------------------------------------------------------------------
 
 def fetch_rss(source: Dict[str, Any], feed_url: str, cfg: Dict[str, Any]) -> List[PressItem]:
-    """RSS feed_url을 받아 PressItem 리스트 반환."""
+    """RSS feed_url을 받아 PressItem 리스트 반환. 실패 시 최대 2회 재시도."""
+    import time as _time
+    max_retries = cfg["http"].get("retry", 2)
     session = _http_session(cfg)
-    try:
-        resp = session.get(feed_url, timeout=cfg["http"]["timeout_sec"])
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        print(f"[fetch_rss] {source['id']} 실패: {e}")
-        return []
+    resp = None
+    for attempt in range(max_retries + 1):
+        try:
+            resp = session.get(feed_url, timeout=cfg["http"]["timeout_sec"])
+            resp.raise_for_status()
+            break
+        except requests.RequestException as e:
+            if attempt < max_retries:
+                wait = 5 * (attempt + 1)
+                print(f"[fetch_rss] {source['id']} 시도 {attempt+1} 실패, {wait}초 후 재시도: {e}")
+                _time.sleep(wait)
+            else:
+                print(f"[fetch_rss] {source['id']} 최종 실패: {e}")
+                return []
 
     parsed = feedparser.parse(resp.content)
     items: List[PressItem] = []

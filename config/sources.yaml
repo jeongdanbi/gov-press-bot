@@ -37,21 +37,17 @@ sources:
     keywords_exclude: []
 
   # ─────────────────────────────────────────────
-  # 금융감독원 / 한국은행 주의사항
+  # 금융감독원: korea.kr 통합 RSS에서 제목 접두사 [금감원] / [금융감독원] 필터링
+  # 정부 부처가 아니라 공공기관이므로 전용 RSS가 없음.
+  # 통합 RSS에 올라오는 빈도는 낮지만 (하루 0~2건), 주요 건은 올라옴.
+  # 금융위-금감원 공동 발표 건은 금융위(fsc) 쪽에서도 잡힘.
   # ─────────────────────────────────────────────
-  # 이 두 기관은 "정부 부처"가 아니라 공공기관/중앙은행이라
-  # korea.kr 정책브리핑에 보도자료가 거의 올라오지 않는다.
-  # 따라서 두 기관은 아래 "korea_kr_all (통합 RSS 필터)" 방식을
-  # 참고용(enabled: false)으로만 등록하고,
-  # 진짜 필요하면 자체 홈페이지 HTML 스크래핑이 필요하다.
-  # (파서는 src/parsers/__init__.py 에 parse_fss_html / parse_bok_html 를 구현하고
-  #  아래 fss_direct / bok_direct 의 enabled: true로 전환)
   - id: fss_via_all
     name: 금융감독원
     emoji: "🛡️"
     type: korea_kr_all
-    title_prefix_match: ["금감원", "금융감독원"]
-    enabled: false
+    title_prefix_match: ["금감원", "금융감독원", "금융감독"]
+    enabled: true
     keywords_include: []
     keywords_exclude: []
 

@@ -55,7 +55,11 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
         webhook = get_slack_webhook()
 
     total_new = 0
-    for source in sources:
+    for i, source in enumerate(sources):
+        # korea.kr 연속 요청 차단 방지: 기관 사이에 3초 대기
+        if i > 0:
+            time.sleep(3)
+
         sid = source["id"]
         print(f"\n[{sid}] {source['name']} 수집 시작 ({source['type']})")
         try:
