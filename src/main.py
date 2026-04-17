@@ -121,13 +121,17 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
             for it in enriched:
                 print(f"  [DRY] {it.title} ({len(it.body_text)}자 본문, 첨부 {len(it.attachments)})")
                 # dry-run에서는 seen에 마킹하지 않음 (테스트 반복 가능하게)
+            total_new += len(enriched)
         else:
-            sent = send_items(enriched, webhook)
-            print(f"[{sid}] Slack 전송: {sent}/{len(enriched)}")
-            for it in enriched:
+            sent_items_list = send_items(enriched, webhook)
+            print(f"[{sid}] Slack 전송: {len(sent_items_list)}/{len(enriched)}")
+            # 전송 성공한 건만 seen에 마킹 (실패한 건 다음 실행에서 재시도)
+            for it in sent_items_list:
                 store.mark(sid, it.uid)
-
-        total_new += len(enriched)
+            if len(sent_items_list) < len(enriched):
+                failed = len(enriched) - len(sent_items_list)
+                print(f"[{sid}] ⚠ {failed}건 전송 실패 → 다음 실행에서 재시도됨")
+            total_new += len(sent_items_list)
 
     # dry-run에서는 seen.json을 저장하지 않음
     if not dry_run:

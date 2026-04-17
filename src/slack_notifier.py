@@ -79,12 +79,12 @@ def build_blocks(item: PressItem) -> List[Dict[str, Any]]:
     return blocks
 
 
-def send_items(items: List[PressItem], webhook_url: str) -> int:
-    """여러 PressItem을 Slack에 순차 전송. 성공 개수 반환."""
+def send_items(items: List[PressItem], webhook_url: str) -> List[PressItem]:
+    """여러 PressItem을 Slack에 순차 전송. 성공한 item 리스트 반환."""
     if not items:
-        return 0
+        return []
 
-    sent = 0
+    sent: List[PressItem] = []
     for item in items:
         blocks = build_blocks(item)
         payload = {
@@ -94,7 +94,7 @@ def send_items(items: List[PressItem], webhook_url: str) -> int:
         try:
             r = requests.post(webhook_url, json=payload, timeout=15)
             r.raise_for_status()
-            sent += 1
+            sent.append(item)
         except requests.RequestException as e:
             print(f"[slack] 전송 실패 {item.uid}: {e}")
     return sent
