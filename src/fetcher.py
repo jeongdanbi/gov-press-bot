@@ -109,6 +109,11 @@ def fetch_rss(source: Dict[str, Any], feed_url: str, cfg: Dict[str, Any]) -> Lis
 KOREA_KR_RSS_FMT = "https://www.korea.kr/rss/dept_{code}.xml"
 KOREA_KR_ALL_RSS = "https://www.korea.kr/rss/pressrelease.xml"
 
+# korea.kr가 2025년 RSS(/rss/*.xml)를 전부 폐지(404)함에 따라,
+# 살아있는 HTML 목록 페이지(pressReleaseList.do)를 스크래핑하는 경로.
+KOREA_KR_LIST_URL = "https://www.korea.kr/briefing/pressReleaseList.do"
+KOREA_KR_BASE = "https://www.korea.kr"
+
 
 def fetch_korea_kr_dept(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[PressItem]:
     code = source.get("dept_code", "").lower()
@@ -147,6 +152,109 @@ def fetch_korea_kr_all(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[Pres
 
 
 # ----------------------------------------------------------------------
+# korea.kr 통합 HTML 목록 (RSS 폐지 대체)
+# ----------------------------------------------------------------------
+
+def _fetch_korea_kr_list_page(cfg: Dict[str, Any], page_index: int) -> List[Dict[str, Any]]:
+    """pressReleaseList.do 한 페이지를 긁어 raw dict 리스트 반환.
+
+    각 dict: {title, link, dept, date, summary}
+    실패 시 빈 리스트.
+    """
+    import time as _time
+    max_retries = cfg["http"].get("retry", 2)
+    session = _http_session(cfg)
+    url = f"{KOREA_KR_LIST_URL}?pageIndex={page_index}"
+    resp = None
+    for attempt in range(max_retries + 1):
+        try:
+            resp = session.get(url, timeout=cfg["http"]["timeout_sec"])
+            resp.raise_for_status()
+            break
+        except requests.RequestException as e:
+            if attempt < max_retries:
+                _time.sleep(5 * (attempt + 1))
+            else:
+                print(f"[korea_kr_list] page {page_index} 최종 실패: {e}")
+                return []
+
+    soup = BeautifulSoup(resp.content, "html.parser")
+    rows: List[Dict[str, Any]] = []
+    for li in soup.select(".list_type li"):
+        a = li.select_one("a[href*=pressReleaseView]")
+        strong = li.select_one("strong")
+        if not a or not strong:
+            continue
+        href = a.get("href", "").strip()
+        if not href:
+            continue
+        link = href if href.startswith("http") else KOREA_KR_BASE + href
+        title = strong.get_text(strip=True)
+
+        lead = li.select_one("span.lead")
+        summary = lead.get_text(" ", strip=True) if lead else ""
+
+        src = li.select_one("span.source")
+        src_raw = src.get_text(strip=True) if src else ""
+        # "2026.07.07국가유산청" → date="2026.07.07", dept="국가유산청" (사이 공백 없음)
+        m = re.match(r"^(\d{4}\.\d{2}\.\d{2})(.+)$", src_raw)
+        if m:
+            date_str, dept = m.group(1), m.group(2).strip()
+        else:
+            date_str, dept = "", src_raw.strip()
+
+        rows.append({
+            "title": title,
+            "link": link,
+            "dept": dept,
+            "date": date_str,
+            "summary": summary,
+        })
+    return rows
+
+
+def fetch_korea_kr_list(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[PressItem]:
+    """korea.kr 통합 HTML 목록에서 부처명 매칭으로 필터링.
+
+    source['dept_match'] 의 문자열 중 하나라도 항목의 부처명(span.source)에
+    포함되면 매칭. 예: dept_match: ["금융위원회", "금융위"]
+    korea.kr가 20건/페이지 최신순으로 내려주므로 여러 페이지를 훑어
+    해당 부처 건을 모은다.
+    """
+    matches = source.get("dept_match", [])
+    if not matches:
+        print(f"[korea_kr_list] {source['id']}: dept_match 누락")
+        return []
+
+    max_pages = int(source.get("list_pages", 3))
+    items: List[PressItem] = []
+    for page in range(1, max_pages + 1):
+        rows = _fetch_korea_kr_list_page(cfg, page)
+        if not rows:
+            break
+        for row in rows:
+            if not any(mt in row["dept"] for mt in matches):
+                continue
+            pub = None
+            if row["date"]:
+                try:
+                    pub = datetime.strptime(row["date"], "%Y.%m.%d")
+                except ValueError:
+                    pub = None
+            items.append(PressItem(
+                source_id=source["id"],
+                source_name=source["name"],
+                source_emoji=source.get("emoji", "📢"),
+                uid=_make_uid(source["id"], row["link"]),
+                title=row["title"],
+                link=row["link"],
+                published_at=pub,
+                summary=row["summary"][:500],
+            ))
+    return items
+
+
+# ----------------------------------------------------------------------
 # HTML 스크래핑 (parsers/ 모듈에 위임)
 # ----------------------------------------------------------------------
 
@@ -173,6 +281,8 @@ def fetch_source(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[PressItem]
         return fetch_korea_kr_dept(source, cfg)
     if t == "korea_kr_all":
         return fetch_korea_kr_all(source, cfg)
+    if t == "korea_kr_list":
+        return fetch_korea_kr_list(source, cfg)
     if t == "rss":
         return fetch_rss(source, source["feed_url"], cfg)
     if t == "html":

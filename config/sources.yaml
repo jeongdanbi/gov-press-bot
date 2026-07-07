@@ -27,35 +27,41 @@ extract:
 sources:
   # ---------- 핵심 6개 기관 (korea.kr 통합 RSS 기반) ----------
 
+  # ─────────────────────────────────────────────
+  # 2025년 korea.kr가 RSS(/rss/*.xml)를 전부 폐지(404)함.
+  # 살아있는 HTML 목록(pressReleaseList.do)을 스크래핑해서
+  # 항목의 부처명(span.source)이 dept_match에 매칭되는 건만 수집한다.
+  # list_pages: 최신순 20건/페이지, 훑을 페이지 수 (기본 3 = 최근 60건).
+  # ─────────────────────────────────────────────
+
   - id: fsc
     name: 금융위원회
     emoji: "🏦"
-    type: korea_kr_dept
-    dept_code: fsc
+    type: korea_kr_list
+    dept_match: ["금융위원회", "금융위"]
+    list_pages: 5
     enabled: true
     keywords_include: []
     keywords_exclude: []
 
-  # ─────────────────────────────────────────────
-  # 금융감독원: korea.kr 통합 RSS에서 제목 접두사 [금감원] / [금융감독원] 필터링
-  # 정부 부처가 아니라 공공기관이므로 전용 RSS가 없음.
-  # 통합 RSS에 올라오는 빈도는 낮지만 (하루 0~2건), 주요 건은 올라옴.
-  # 금융위-금감원 공동 발표 건은 금융위(fsc) 쪽에서도 잡힘.
-  # ─────────────────────────────────────────────
   - id: fss_via_all
     name: 금융감독원
     emoji: "🛡️"
-    type: korea_kr_all
-    title_prefix_match: ["금감원", "금융감독원", "금융감독"]
-    enabled: true
+    type: korea_kr_list
+    # 금감원은 정부부처가 아닌 특수법인이라 korea.kr(정책브리핑)에 게시되지 않음(200건 스캔 0건).
+    # 금감원 알림이 필요하면 fss_direct(홈페이지 직접 스크래핑)를 별도로 구현/활성화해야 함.
+    dept_match: ["금융감독원", "금감원"]
+    list_pages: 5
+    enabled: false
     keywords_include: []
     keywords_exclude: []
 
   - id: bok_via_all
     name: 한국은행
     emoji: "💴"
-    type: korea_kr_all
-    title_prefix_match: ["한국은행", "한은"]
+    type: korea_kr_list
+    dept_match: ["한국은행"]
+    list_pages: 5
     enabled: false
     keywords_include: []
     keywords_exclude: []
@@ -63,17 +69,20 @@ sources:
   - id: ftc
     name: 공정거래위원회
     emoji: "⚖️"
-    type: korea_kr_dept
-    dept_code: ftc
+    type: korea_kr_list
+    dept_match: ["공정거래위원회", "공정위"]
+    list_pages: 5
     enabled: true
     keywords_include: []
     keywords_exclude: []
 
   - id: moef
-    name: 기획재정부
+    name: 재정경제부
     emoji: "🏛️"
-    type: korea_kr_dept
-    dept_code: moef
+    type: korea_kr_list
+    # 2025 정부조직 개편: 기획재정부 → 재정경제부(재경부)로 korea.kr 표기 변경됨.
+    dept_match: ["재정경제부", "기획재정부", "재경부", "기재부"]
+    list_pages: 5
     enabled: true
     keywords_include: []
     keywords_exclude: []
@@ -81,8 +90,10 @@ sources:
   - id: nts
     name: 국세청
     emoji: "📊"
-    type: korea_kr_dept
-    dept_code: nts
+    type: korea_kr_list
+    dept_match: ["국세청"]
+    # 저빈도 부처: 최근 100건에도 안 잡힐 때가 있어 더 깊게 훑음.
+    list_pages: 8
     enabled: true
     keywords_include: []
     keywords_exclude: []
@@ -90,8 +101,9 @@ sources:
   - id: molit
     name: 국토교통부
     emoji: "🏗️"
-    type: korea_kr_dept
-    dept_code: molit
+    type: korea_kr_list
+    dept_match: ["국토교통부", "국토부"]
+    list_pages: 5
     enabled: true
     keywords_include: []
     keywords_exclude: []
@@ -99,8 +111,10 @@ sources:
   - id: mss
     name: 중소벤처기업부
     emoji: "🚀"
-    type: korea_kr_dept
-    dept_code: mss
+    type: korea_kr_list
+    dept_match: ["중소벤처기업부", "중기부"]
+    # 저빈도 부처: 최근 100건에도 안 잡힐 때가 있어 더 깊게 훑음.
+    list_pages: 8
     enabled: true
     keywords_include: []
     keywords_exclude: []
