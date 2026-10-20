@@ -119,6 +119,61 @@ sources:
     keywords_include: []
     keywords_exclude: []
 
+  # ---------- 2026-10-20 추가 (1인가구·청년 기사용) ----------
+  # korea.kr 표기명은 2026-10-20 목록 15쪽 실측으로 확인.
+
+  - id: mohw
+    name: 보건복지부
+    emoji: "🏥"
+    type: korea_kr_list
+    dept_match: ["보건복지부", "복지부"]
+    list_pages: 5
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: moel
+    name: 고용노동부
+    emoji: "👷"
+    type: korea_kr_list
+    dept_match: ["고용노동부", "노동부"]
+    list_pages: 5
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: mois
+    name: 행정안전부
+    emoji: "🏢"
+    type: korea_kr_list
+    dept_match: ["행정안전부", "행안부"]
+    list_pages: 5
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: kostat
+    name: 국가데이터처
+    emoji: "📈"
+    type: korea_kr_list
+    # 옛 통계청. 저빈도 부처라 더 깊게 훑음.
+    dept_match: ["국가데이터처", "통계청"]
+    list_pages: 8
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: mogef
+    name: 성평등가족부
+    emoji: "👪"
+    type: korea_kr_list
+    # 옛 여성가족부. 저빈도 부처라 더 깊게 훑음.
+    dept_match: ["성평등가족부", "여성가족부"]
+    list_pages: 8
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
   # ---------- 기관 홈페이지 직접 RSS (korea.kr에 없을 경우 백업용) ----------
   # 아래는 비활성 상태 기본값. korea_kr_dept가 동작 안 할 때 enabled: true로 전환
 
