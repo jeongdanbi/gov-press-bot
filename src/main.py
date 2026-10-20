@@ -101,7 +101,10 @@ def run(dry_run: bool = False, only_source: str | None = None) -> int:
         # --- END DEBUG ---
 
         # 최신순 정렬 (published_at desc). None은 맨 뒤로.
-        new_items.sort(key=lambda x: x.published_at or 0, reverse=True)
+        # 날짜 없는 항목(None)이 섞여도 TypeError로 실행 전체가 죽지 않게: 날짜 있는 것 먼저, tz 제거 후 비교.
+        new_items.sort(key=lambda x: (x.published_at is not None,
+                                      x.published_at.replace(tzinfo=None) if x.published_at else 0),
+                       reverse=True)
         new_items = new_items[:MAX_ITEMS_PER_SOURCE]
 
         print(f"[{sid}] 새 항목: {len(new_items)} 건")

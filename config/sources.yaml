@@ -12,7 +12,8 @@
 
 # 공통 HTTP 설정
 http:
-  user_agent: "Mozilla/5.0 (gov-press-bot; +https://github.com/yourname/gov-press-bot)"
+  # 금감원(fss.or.kr)이 UA에 "bot"/깃허브 주소가 있으면 연결을 끊어서 일반 브라우저 UA 사용.
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
   timeout_sec: 20
   retry: 2
 
@@ -180,6 +181,29 @@ sources:
     type: rss
     # 한국은행 홈페이지 보도자료 RSS(최근 100건). korea.kr엔 안 올라와서 직접 받는다. 2026-10-20 수집·본문·PDF 추출 확인.
     feed_url: "https://www.bok.or.kr/portal/bbs/B0000501/news.rss?menuNo=201264"
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: fss
+    name: 금융감독원
+    emoji: "🛡️"
+    type: html
+    # 금감원은 korea.kr·RSS 모두 없어 홈페이지 보도자료 목록(서버 렌더 HTML)을 직접 파싱한다.
+    list_url: "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218"
+    parser: fss_html
+    enabled: true
+    keywords_include: []
+    keywords_exclude: []
+
+  - id: seoul
+    name: 서울특별시
+    emoji: "🏙️"
+    type: html
+    # 서울시 보도자료 목록(bbsNo=158). 상세는 ?bbsNo=158&nttNo=번호.
+    list_url: "https://www.seoul.go.kr/news/news_report.do"
+    parser: seoul_html
+    bbs_no: "158"
     enabled: true
     keywords_include: []
     keywords_exclude: []

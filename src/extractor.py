@@ -17,6 +17,12 @@ from .models import Attachment
 ATTACH_EXT_PATTERN = re.compile(r"\.(pdf|hwp|hwpx|docx|doc)(\?|$)", re.IGNORECASE)
 
 
+# 첨부 링크 주소에 확장자가 없는 사이트(금감원 fileDown.do, 서울시 getFile)는
+# 링크 제목/텍스트("...hwp", "...pdf (파일크기: 1KB)")에서 확장자를 읽는다.
+DOWNLOAD_HREF_HINT = re.compile(r"fileDown\.do|/comm/getFile", re.IGNORECASE)
+LOOSE_EXT_PATTERN = re.compile(r"\.(pdf|hwpx|hwp|docx|doc)(?=[\s)\]]|$)", re.IGNORECASE)
+
+
 def _guess_ext(url: str, filename: str = "") -> str:
     m = ATTACH_EXT_PATTERN.search(filename or url)
     if m:
@@ -34,6 +40,9 @@ def _clean_text(s: str) -> str:
 # ----------------------------------------------------------------------
 
 BODY_SELECTORS = [
+    # 금감원 상세 본문 / 서울시 상세 본문
+    "div.n-dbdata",
+    "#scrabArea",
     # korea.kr 정책브리핑 보도자료 상세
     "div.article_body",
     "div#article_body",
@@ -69,6 +78,14 @@ def _extract_attachments(soup: BeautifulSoup, base_url: str) -> List[Attachment]
             continue
         fname_guess = (a.get("title") or a.get_text(" ", strip=True) or "").strip()
         ext = _guess_ext(href, fname_guess)
+        if not ext and DOWNLOAD_HREF_HINT.search(href):
+            for cand in ((a.get("title") or ""), a.get_text(" ", strip=True)):
+                m = LOOSE_EXT_PATTERN.search(cand)
+                if m:
+                    ext = m.group(1).lower()
+                    # "이름.pdf (파일크기: ..)" 에서 확장자까지만 파일명으로
+                    fname_guess = re.sub(r"^다운로드\(", "", cand[:m.end()]).strip()
+                    break
         if not ext:
             continue
         full = urljoin(base_url, href)

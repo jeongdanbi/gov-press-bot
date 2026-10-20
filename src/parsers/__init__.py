@@ -8,7 +8,10 @@ fetcher.fetch_html() 에서 `parse_<parser_name>(source, cfg)` 를 동적으로 
 2. sources.yaml 에 `parser: XXX_html` 로 지정
 """
 from __future__ import annotations
+import re
+from datetime import datetime
 from typing import Any, Dict, List
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -57,13 +60,112 @@ def parse_ftc_html(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[PressIte
 
 
 # ----------------------------------------------------------------------
+# 금융감독원 보도자료 (서버 렌더 HTML 표, RSS 없음)
+# ----------------------------------------------------------------------
+
+def _get_html(source_id: str, url: str, cfg: Dict[str, Any]):
+    import time as _time
+    session = _http_session(cfg)
+    max_retries = cfg["http"].get("retry", 2)
+    for attempt in range(max_retries + 1):
+        try:
+            r = session.get(url, timeout=cfg["http"]["timeout_sec"])
+            r.raise_for_status()
+            return r
+        except requests.RequestException as e:
+            if attempt < max_retries:
+                _time.sleep(5 * (attempt + 1))
+            else:
+                print(f"[{source_id}] 목록 요청 최종 실패: {e}")
+    return None
+
+
+def _parse_ymd(raw: str):
+    m = re.search(r"(\d{4})[-.](\d{2})[-.](\d{2})", raw or "")
+    if not m:
+        return None
+    try:
+        return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    except ValueError:
+        return None
+
+
+def parse_fss_html(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[PressItem]:
+    """금감원 보도자료 목록(B0000188). tbody tr > td.title > a, 날짜는 YYYY-MM-DD 셀."""
+    r = _get_html(source["id"], source["list_url"], cfg)
+    if r is None:
+        return []
+    soup = BeautifulSoup(r.text, "html.parser")
+    items: List[PressItem] = []
+    for row in soup.select("tbody tr"):
+        a = row.select_one("td.title a[href]")
+        if not a:
+            continue
+        title = a.get_text(" ", strip=True)
+        link = urljoin(source["list_url"], a["href"].strip())
+        pub = None
+        for td in row.find_all("td", recursive=False):
+            pub = _parse_ymd(td.get_text(strip=True))
+            if pub:
+                break
+        if not title:
+            continue
+        items.append(PressItem(
+            source_id=source["id"],
+            source_name=source["name"],
+            source_emoji=source.get("emoji", "📢"),
+            uid=_make_uid(source["id"], link),
+            title=title,
+            link=link,
+            published_at=pub,
+        ))
+    return items
+
+
+# ----------------------------------------------------------------------
+# 서울특별시 보도자료 (목록 링크가 javascript:fnTbbsView('번호') -> ?bbsNo=158&nttNo=번호)
+# ----------------------------------------------------------------------
+
+def parse_seoul_html(source: Dict[str, Any], cfg: Dict[str, Any]) -> List[PressItem]:
+    r = _get_html(source["id"], source["list_url"], cfg)
+    if r is None:
+        return []
+    soup = BeautifulSoup(r.text, "html.parser")
+    bbs_no = source.get("bbs_no", "158")
+    items: List[PressItem] = []
+    for row in soup.select("tbody tr"):
+        a = row.select_one("td.sib-lst-type-basic-subject a[href]")
+        if not a:
+            continue
+        m = re.search(r"fnTbbsView\('(\d+)'\)", a["href"])
+        if not m:
+            continue
+        title = a.get_text(" ", strip=True)
+        link = f"{source['list_url'].split('?')[0]}?bbsNo={bbs_no}&nttNo={m.group(1)}"
+        pub = None
+        for td in row.find_all("td", recursive=False):
+            pub = _parse_ymd(td.get_text(strip=True))
+            if pub:
+                break
+        if not title:
+            continue
+        items.append(PressItem(
+            source_id=source["id"],
+            source_name=source["name"],
+            source_emoji=source.get("emoji", "📢"),
+            uid=_make_uid(source["id"], link),
+            title=title,
+            link=link,
+            published_at=pub,
+        ))
+    return items
+
+
+# ----------------------------------------------------------------------
 # 아래는 플레이스홀더 - 필요 시 실제 셀렉터 채워 넣기
 # ----------------------------------------------------------------------
 
 def parse_fsc_html(source, cfg):
-    return []
-
-def parse_fss_html(source, cfg):
     return []
 
 def parse_bok_html(source, cfg):
