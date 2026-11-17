@@ -2551,7 +2551,8 @@
     "mois:156789401",
     "mois:156789393",
     "mois:156789565",
-    "mois:156789590"
+    "mois:156789590",
+    "mois:156789675"
   ],
   "kostat": [
     "kostat:156785657",
@@ -2794,7 +2795,8 @@
     "fss:2a7ab8d150411bba",
     "fss:2a477a0134d26010",
     "fss:c749a6f2284c9550",
-    "fss:78c6dc774e1aa4d7"
+    "fss:78c6dc774e1aa4d7",
+    "fss:1c3b9cab74e42ed4"
   ],
   "seoul": [
     "seoul:21018158ba47c555",
@@ -3111,6 +3113,9 @@
     "seoul:f30c2f608588dcca",
     "seoul:5c116e23dc3e6558",
     "seoul:144efac673c2062f",
-    "seoul:4b22cc60f851bfd2"
+    "seoul:4b22cc60f851bfd2",
+    "seoul:81dea8df4279aca2",
+    "seoul:60bdac20377b326a",
+    "seoul:a973614c67855570"
   ]
 }
